@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Inspect a Device's TWAIN capabilities With DWT</title>
+    <script src="https://unpkg.com/dwt/dist/dynamsoft.webtwain.min.js"> </script>
+    <link rel="stylesheet" href="Style/ds.demo.css">
+</head>
+
+<body>
+    <div id="tipTop">
+        <span onclick="this.parentElement.style.display='none'" class="close">&times;</span>
+        <p>This demo only works on modern browsers like Chrome 27+ &amp; Firefox 27+ (Windows &amp; Mac) and Edge &amp;
+            IE 11 (Win)</p>
+    </div>
+
+    <div id="main">
+        <div class="container">
+            <div class="ct-lt clearfix">
+                <div id="dwtcontrolContainer"></div>
+            </div>
+            <div class="ct-rt" style="overflow:hidden">
+                <div class="content clearfix">
+                    <div class="section">
+                        <select class="w100p" id="source">
+                            <option value="" disabled selected>Select A Device</option>
+                        </select>
+                        <input type="button" class="btn  bgBlue mt20" value="Show Supported Capabilites"
+                            onclick="checkScanner();" />
+                    </div>
+                    <div class="section">
+                        <select id="capabilities" class="w100p" onchange="getCapabilityInfo();">
+                            <option value="" disabled selected>All Supported Capabilites</option>
+                        </select>
+                        <select id="messageType" class="w47p mr4p mt15" onchange="changeByMesageType();">
+                            <option value="" disabled selected>Message Type</option>
+                        </select>
+                        <select id="containerType" class="w47p mt15" disabled="disabled">
+                            <option value="" disabled selected>Container Type</option>
+                        </select>
+                        <p id="availableValuesSPAN" style="display:none">
+                            <select size="1" id="availableValues" class="w100p mt15">
+                                <option value="" disabled selected>Available Values</option>
+                            </select>
+                        </p>
+                        <p id='textAboveInput' class="w100p fc4 mt15">Returned:</p>
+                        <select size="1" id="TrueOrFalse" class="w100p" style="display:none;">
+                            <option value="1">TRUE</option>
+                            <option value="0">FALSE</option>
+                        </select>
+                        <input id="txtReturnedOrToSet" type="text" value="" class="w100p"
+                            placeholder="Returned Value" />
+                        <input type="button" id="btnSetCapability" value="Start Negotiation" class="btn  bgBlue mt20"
+                            style="display:none;" onclick="setCapability();" />
+                        <input type="button" id="btnScanEx" value="Start Scanning" class="btn  bgBlue mt20"
+                            onclick="AcquireImage();" />
+                    </div>
+                    <div class="section">
+                        <div id="status_text"></div>
+                        <input type="button" value="Clear All Information" class="btn  bgBlue" onclick="clearInfo();" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="Scripts/script.js"></script>
+</body>
+
+</html>
