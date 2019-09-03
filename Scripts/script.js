@@ -1,6 +1,3 @@
-Dynamsoft.WebTwainEnv.AutoLoad = false;
-Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
-
 var DWObject, supportedCapabilities, msgType, ctnType, txtReturnedOrToSet, textStatus = "";
 var CurrentPathName = unescape(location.pathname);
 var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
@@ -22,6 +19,20 @@ window.onload = function () {
         if (document.getElementsByClassName("dynamsoft-dialog-close"))
             document.getElementsByClassName("dynamsoft-dialog-close")[0].style.display = "none";
     } else {
+        Dynamsoft.WebTwainEnv.AutoLoad = false;
+        Dynamsoft.WebTwainEnv.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '100%', Height: '500px' }];
+        Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
+        /**
+         * In order to use the full version, do the following
+         * 1. Change Dynamsoft.WebTwainEnv.Trial to false
+         * 2. Replace A-Valid-Product-Key with a full version key
+         * 3. Change Dynamsoft.WebTwainEnv.ResourcesPath to point to the full version 
+         *    resource files that you obtain after purchasing a key
+         */
+        Dynamsoft.WebTwainEnv.Trial = true;
+        //Dynamsoft.WebTwainEnv.ProductKey = "A-Valid-Product-Key";
+        //Dynamsoft.WebTwainEnv.ResourcesPath = "https://tst.dynamsoft.com/libs/dwt/15.0";
+
         Dynamsoft.WebTwainEnv.Load();
     }
 };

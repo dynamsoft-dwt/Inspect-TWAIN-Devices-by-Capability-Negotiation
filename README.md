@@ -13,13 +13,12 @@ Date: 2019/09/03
 Support: support@dynamsoft.com
 
 
-Live demo
-*********
+## Live demo
+
 https://demo.dynamsoft.com/samples/dwt/Inspect-TWAIN-Devices-by-Capability-Negotiation/Inspect-TWAIN-Devices-by-Capability-Negotiation.html
 
 
-How to install
-**************
+## How to install
 
 [Easy way]
 Access the live demo page (see above) and follow the steps there to install Dynamic Web TWAIN
@@ -28,8 +27,7 @@ Access the live demo page (see above) and follow the steps there to install Dyna
 Download and install Dynamic Web TWAIN 30-day free-trial if you haven't done so already
 http://www.dynamsoft.com/Downloads/WebTWAIN_Download.aspx
 
-How to run
-**********
+## How to run
 
 [Easy way]
 Open and run "Inspect-TWAIN-Devices-by-Capability-Negotiation.html" in your browser
