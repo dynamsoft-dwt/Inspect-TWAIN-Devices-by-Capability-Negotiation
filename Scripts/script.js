@@ -15,45 +15,45 @@ window.onload = function () {
         ObjString.push('<div class="p15">');
         ObjString.push("Please note that your current browser is not supported, please use modern browsers like Chrome, Firefox, Edge or IE 11.");
         ObjString.push('</div>');
-        Dynamsoft.WebTwainEnv.ShowDialog(400, 180, ObjString.join(''));
+        Dynamsoft.DWT.ShowDialog(400, 180, ObjString.join(''));
         if (document.getElementsByClassName("dynamsoft-dialog-close"))
             document.getElementsByClassName("dynamsoft-dialog-close")[0].style.display = "none";
     } else {
-        Dynamsoft.WebTwainEnv.AutoLoad = false;
-        Dynamsoft.WebTwainEnv.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '100%', Height: '500px' }];
-        Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
+        Dynamsoft.DWT.AutoLoad = false;
+        Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '100%', Height: '600px' }];
+        Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
         /**
          * In order to use the full version, do the following
-         * 1. Change Dynamsoft.WebTwainEnv.Trial to false
-         * 2. Replace A-Valid-Product-Key with a full version key
-         * 3. Change Dynamsoft.WebTwainEnv.ResourcesPath to point to the full version 
+         * 1. Replace A-Valid-Product-Key with a full version key
+         * 2. Change Dynamsoft.DWT.ResourcesPath to point to the full version 
          *    resource files that you obtain after purchasing a key
          */
-        Dynamsoft.WebTwainEnv.Trial = true;
-        //Dynamsoft.WebTwainEnv.ProductKey = "A-Valid-Product-Key";
-        //Dynamsoft.WebTwainEnv.ResourcesPath = "https://tst.dynamsoft.com/libs/dwt/15.0";
+        //Dynamsoft.DWT.ProductKey = "A-Valid-Product-Key";
+        //Dynamsoft.DWT.ResourcesPath = "https://tst.dynamsoft.com/libs/dwt/17.0";
+        Dynamsoft.DWT.ProductKey = 't00891wAAAKBfWo4sRRVNTyLqdC7nKomEJIfBYqfXWg5mblnP0eeJi+LsMIUdQvrBf//ocS3z8MJA47R4VdO4x24uJwlqKgkuZOa7BUQHPkFNA5hFSi6lG2qOK6I=';
+        Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
 
-        Dynamsoft.WebTwainEnv.Load();
+        Dynamsoft.DWT.Load();
     }
 };
 
 function Dynamsoft_OnReady() {
     supportedCapabilities = document.getElementById("capabilities");
     msgType = document.getElementById("messageType");
-    msgType.options.add(new Option("MSG_GET", EnumDWT_MessageType.TWQC_GET));
-    msgType.options.add(new Option("MSG_SET", EnumDWT_MessageType.TWQC_SET));
-    msgType.options.add(new Option("MSG_RESET", EnumDWT_MessageType.TWQC_RESET));
+    msgType.options.add(new Option("MSG_GET", Dynamsoft.DWT.EnumDWT_MessageType.TWQC_GET));
+    msgType.options.add(new Option("MSG_SET", Dynamsoft.DWT.EnumDWT_MessageType.TWQC_SET));
+    msgType.options.add(new Option("MSG_RESET", Dynamsoft.DWT.EnumDWT_MessageType.TWQC_RESET));
     msgType.options.selectedIndex = 1;
     ctnType = document.getElementById("containerType");
-    ctnType.options.add(new Option("TWON_ARRAY", EnumDWT_CapType.TWON_ARRAY));
-    ctnType.options.add(new Option("TWON_ENUMERATION", EnumDWT_CapType.TWON_ENUMERATION));
-    ctnType.options.add(new Option("TWON_ONEVALUE", EnumDWT_CapType.TWON_ONEVALUE));
-    ctnType.options.add(new Option("TWON_RANGE", EnumDWT_CapType.TWON_RANGE));
+    ctnType.options.add(new Option("TWON_ARRAY", Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY));
+    ctnType.options.add(new Option("TWON_ENUMERATION", Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION));
+    ctnType.options.add(new Option("TWON_ONEVALUE", Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE));
+    ctnType.options.add(new Option("TWON_RANGE", Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE));
     ctnType.options.add(new Option("Not Supported", 0));
     txtReturnedOrToSet = document.getElementById('txtReturnedOrToSet');
     TrueOrFalse = document.getElementById('TrueOrFalse');
 
-    DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer');
+    DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer');
     if (DWObject) {
 		/*
 		* List all available TWAIN deivces (scanners("etc.)
@@ -107,7 +107,7 @@ function checkScanner() {
 }
 
 function showCapabilites() {
-    DWObject.Capability = EnumDWT_Cap.CAP_SUPPORTEDCAPS;    //CAP_SUPPORTEDCAPS
+    DWObject.Capability = Dynamsoft.DWT.EnumDWT_Cap.CAP_SUPPORTEDCAPS;    //CAP_SUPPORTEDCAPS
     if (DWObject.CapGet()) {
         var supportedCount = DWObject.CapNumItems;
         UpdateInfo('How Many Capabilities Does it Support?', false); UpdateInfo(supportedCount, true);
@@ -341,7 +341,7 @@ function getCapabilityInfo() {
     document.getElementById('availableValuesSPAN').style.display = 'none';
     DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = false;
     switch (DynamsoftCapabilityNegotiation.tmpType) {
-        case EnumDWT_CapType.TWON_ARRAY/*3*/:
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY/*3*/:
             document.getElementById('availableValuesSPAN').style.display = '';
             document.getElementById('availableValues').options.length = 1;
             for (i = 0; i < DWObject.CapNumItems; i++) {
@@ -352,10 +352,10 @@ function getCapabilityInfo() {
             }
             document.getElementById('availableValues').options.selectedIndex = 0;
             break;
-        case EnumDWT_CapType.TWON_ENUMERATION/*4*/:
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION/*4*/:
             document.getElementById('availableValuesSPAN').style.display = '';
             document.getElementById('availableValues').options.length = 1;
-            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
                 UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
                 for (i = 0; i < DWObject.CapNumItems; i++) {
                     DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
@@ -381,9 +381,9 @@ function getCapabilityInfo() {
                 }
             }
             break;
-        case EnumDWT_CapType.TWON_ONEVALUE/*5*/:
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE/*5*/:
             var tempValue = '';
-            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
                 UpdateInfo('Special Capability ' + '- ICAP_FRAMES', true);
                 DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " " + DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
                 UpdateInfo('There is only one available Frame: ', false);
@@ -397,19 +397,19 @@ function getCapabilityInfo() {
                 /*
 				* Special for BOOL
 				*/
-                if (DWObject.CapValueType == EnumDWT_CapValueType.TWTY_BOOL) {
+                if (DWObject.CapValueType == Dynamsoft.DWT.EnumDWT_CapValueType.TWTY_BOOL) {
                     DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = true;
                     if (tempValue == 0) tempValue = 'FALSE'; else tempValue = 'TRUE';
                 }
                 /*
 				* Special for DUPLEX
 				*/
-                if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
+                if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
                 UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
                 UpdateInfo('Value = ' + tempValue, true);
             }
             break;
-        case EnumDWT_CapType.TWON_RANGE/*6*/:
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE/*6*/:
             UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
             UpdateInfo('Min = ' + DWObject.CapMinValue, true);
             UpdateInfo('Max = ' + DWObject.CapMaxValue, true);
@@ -420,9 +420,9 @@ function getCapabilityInfo() {
         default: console.log('This Capability is not supported');
     }
     var supportLevel = [];
-    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GET)) supportLevel.push('GET');/*TWQC_GET*/
-    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_SET)) supportLevel.push('SET');/*TWQC_SET*/
-    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_RESET)) supportLevel.push('RESET');/*TWQC_RESET*/
+    if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_GET)) supportLevel.push('GET');/*TWQC_GET*/
+    if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_SET)) supportLevel.push('SET');/*TWQC_SET*/
+    if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_RESET)) supportLevel.push('RESET');/*TWQC_RESET*/
     if (supportLevel.length > 0) {
         UpdateInfo('Supported operations: ', false);
         UpdateInfo(supportLevel.join(' / '), true);
@@ -444,11 +444,11 @@ function setCapability() {
     if (DynamsoftCapabilityNegotiation.tmpType > 2 && DynamsoftCapabilityNegotiation.tmpType < 7)
         ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
     switch (DynamsoftCapabilityNegotiation.tmpType) {
-        case EnumDWT_CapType.TWON_ARRAY/*3*/:
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY/*3*/:
             alert('Setting an Array is not implemented');
             break;
-        case EnumDWT_CapType.TWON_ENUMERATION/*4*/:
-            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION/*4*/:
+            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
                 if (document.getElementById('availableValues').length == 1) { /*Nothing in the List*/
                     tempValue = txtReturnedOrToSet.value.split(' ');
                 }
@@ -484,8 +484,8 @@ function setCapability() {
                 }
             }
             break;
-        case EnumDWT_CapType.TWON_ONEVALUE/*5*/:
-            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE/*5*/:
+            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
                 tempValue = txtReturnedOrToSet.value.split(' ');
                 DWObject.CapSetFrame(0, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
                 DWObject.CapSet();
@@ -509,13 +509,13 @@ function setCapability() {
                 UpdateInfo(DWObject.ErrorString, true);
                 DWObject.CapGet();
                 valueToShow = DWObject.CapValue;
-                if (DWObject.CapValueType == EnumDWT_CapValueType.TWTY_BOOL) {
+                if (DWObject.CapValueType == Dynamsoft.DWT.EnumDWT_CapValueType.TWTY_BOOL) {
                     if (valueToShow == 0) valueToShow = 'FALSE'; else valueToShow = 'TRUE';
                 }
                 UpdateInfo('Value after setting: ' + valueToShow, true);
             }
             break;
-        case EnumDWT_CapType.TWON_RANGE/*6*/:
+        case Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE/*6*/:
             DWObject.CapCurrentValue = parseFloat(txtReturnedOrToSet.value);
             DWObject.CapSet();
             UpdateInfo(DWObject.ErrorString, true);
@@ -544,7 +544,7 @@ function UpdateInfo(txt, specialtxt) {
 
 function changeByMesageType() {
     switch (parseInt(document.getElementById('messageType').value)) {
-        case EnumDWT_MessageType.TWQC_GET:
+        case Dynamsoft.DWT.EnumDWT_MessageType.TWQC_GET:
             document.getElementById('btnSetCapability').style.display = 'none';
             txtReturnedOrToSet.placeholder = 'Returned Value';
             txtReturnedOrToSet.style.display = '';
@@ -552,11 +552,11 @@ function changeByMesageType() {
             document.getElementById('textAboveInput').innerText = 'Returned:';
             document.getElementById('textAboveInput').style.display = '';
             break;
-        case EnumDWT_MessageType.TWQC_SET:
+        case Dynamsoft.DWT.EnumDWT_MessageType.TWQC_SET:
             document.getElementById('btnSetCapability').style.display = '';
             txtReturnedOrToSet.placeholder = 'Value to Set';
             txtReturnedOrToSet.value = '';
-            if (DynamsoftCapabilityNegotiation.tmpType == EnumDWT_CapType.TWON_ENUMERATION) {
+            if (DynamsoftCapabilityNegotiation.tmpType == Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION) {
                 document.getElementById('textAboveInput').style.display = 'none';
                 txtReturnedOrToSet.style.display = 'none';
             }
@@ -572,14 +572,14 @@ function changeByMesageType() {
                 }
             }
 
-            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
                 document.getElementById('textAboveInput').style.display = '';
                 txtReturnedOrToSet.style.display = '';
                 txtReturnedOrToSet.value = DynamsoftCapabilityNegotiation.tempFrame;
             }
             document.getElementById('textAboveInput').innerText = 'Set this Value:';
             break;
-        case EnumDWT_MessageType.TWQC_RESET:
+        case Dynamsoft.DWT.EnumDWT_MessageType.TWQC_RESET:
             clearInfo();
             if (DWObject.DataSourceStatus != 1) {
                 DWObject.SetOpenSourceTimeout(2000);
