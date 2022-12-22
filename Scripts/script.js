@@ -1,4 +1,4 @@
-var DWObject, supportedCapabilities, msgType, ctnType, txtReturnedOrToSet, textStatus = "";
+var DWObject, supportedCapabilities, msgType, ctnType, txtReturnedOrToSet, textStatus = "", deviceList;
 var CurrentPathName = unescape(location.pathname);
 var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
 var strHTTPServer = location.hostname;
@@ -19,6 +19,7 @@ window.onload = function () {
         if (document.getElementsByClassName("dynamsoft-dialog-close"))
             document.getElementsByClassName("dynamsoft-dialog-close")[0].style.display = "none";
     } else {
+		Dynamsoft.DWT.UseLocalService = true;
         Dynamsoft.DWT.AutoLoad = false;
         Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '100%', Height: '600px' }];
         Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady);
@@ -30,7 +31,7 @@ window.onload = function () {
          */
         //Dynamsoft.DWT.ProductKey = "A-Valid-Product-Key";
         //Dynamsoft.DWT.ResourcesPath = "https://tst.dynamsoft.com/libs/dwt/17.0";
-        Dynamsoft.DWT.ProductKey = 't00891wAAAKFs7VjcTP0UG20tzpw0mVsqmlIukOMDImLaclVr8l5ReM0df50rg9RNaH7A9mwLt6khlmvJyIqEixQeDZAz0iBvgzHPOXcQA/gbSOY51F46ANDILMM=';
+        Dynamsoft.DWT.ProductKey = 't00901wAAAGi71cktM2NG4toMEJ/g3egqded0C1EBhYMai/rMb+9PivaU9+1xp3qau4200cRaQBLw3fqD/MrH0+LKNIdtwU4rfxe0NzcomBYGKCsgTgto+AWw+SxV';
         Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
 
         Dynamsoft.DWT.Load();
@@ -60,12 +61,18 @@ function Dynamsoft_OnReady() {
 		*/
         DWObject.Width = 504;
         DWObject.Height = 599;
+		deviceList=[];
         var twainsource = document.getElementById("source");
-        twainsource.options.length = 1;
-        var vCount = DWObject.SourceCount;
-        for (var i = 0; i < vCount; i++) {
-            twainsource.options.add(new Option(DWObject.GetSourceNameItems(i), i));
-        }
+        twainsource.options.length = 1;		
+		DWObject.GetDevicesAsync().then(function(devices){
+			for (var i = 0; i < devices.length; i++) { // Get how many sources are installed in the system
+				twainsource.options.add(new Option(devices[i].displayName, i+1)); // Add the sources in a drop-down list
+				deviceList.push(devices[i]);
+			}
+		}).catch(function (exp) {
+			alert(exp.message);
+		});
+				
         DWObject.SetViewMode(2, 2);
     }
     DWObject.IfShowUI = false;
@@ -73,37 +80,49 @@ function Dynamsoft_OnReady() {
 }
 
 function AcquireImage() {
-    if (DWObject.DataSourceStatus != 1) {
-        DWObject.SelectSourceByIndex(document.getElementById('source').value);
-        DWObject.OpenSource();
-    } else {
-        var sel = document.getElementById('source');
-        var num = parseInt(sel.value) + 1;
-        if (sel.options[num].text != DWObject.CurrentSourceName) {
-            DWObject.SelectSourceByIndex(document.getElementById('source').value);
-            DWObject.OpenSource();
-        }
-    }
-    var OnAcquireImageSuccess, OnAcquireImageFailure;
-    OnAcquireImageSuccess = function () {
-        DWObject.CloseSource();
-        console.log('Scan Succeeded!');
-    };
-    OnAcquireImageFailure = function () {
-        DWObject.CloseSource();
-        alert('Scan Failed!');
-    };
-    DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
+	var ddlSource = document.getElementById('source');
+	if (ddlSource) {
+		var sel = document.getElementById('source');
+        var num = parseInt(sel.value);
+        if (sel.options[num].text == DWObject.CurrentSourceName) {
+			DWObject.AcquireImageAsync({
+				IfDisableSourceAfterAcquire: true // Scanner source will be disabled/closed automatically after the scan.
+			}).then(function(){
+				return DWObject.CloseSourceAsync();
+			}).catch(function (exp) {
+				alert(exp.message);
+			});
+		} else {
+			DWObject.SelectDeviceAsync(deviceList[ddlSource.selectedIndex-1]).then(function () {
+				return DWObject.AcquireImageAsync({
+						IfDisableSourceAfterAcquire: true // Scanner source will be disabled/closed automatically after the scan.
+					});
+			}).then(function(){
+				return DWObject.CloseSourceAsync();
+			}).catch(function (exp) {
+				alert(exp.message);
+			});
+		}
+	}
 }
 
 function checkScanner() {
-    if (document.getElementById('source').value == "") { alert("Please select a device first!"); return; }
-    DWObject.SelectSourceByIndex(document.getElementById('source').value);
-    DWObject.CloseSource();
-    DWObject.SetOpenSourceTimeout(2000);
-    DWObject.OpenSource();
-    showCapabilites();
-    DWObject.CloseSource();
+	var ddlSource = document.getElementById('source');
+	if (ddlSource) {
+		if (ddlSource.value == "") { alert("Please select a device first!"); return; }
+		
+		DWObject.SelectDeviceAsync(deviceList[ddlSource.selectedIndex -1]).then(function () {
+			return DWObject.SetOpenSourceTimeout(2000);
+		}).then(function(){
+			return DWObject.OpenSourceAsync();
+		}).then(function(){
+			return showCapabilites();
+		}).then(function(){
+			return DWObject.CloseSourceAsync();
+		}).catch(function (exp) {
+			alert(exp.message);
+		});
+	}
 }
 
 function showCapabilites() {
@@ -326,205 +345,220 @@ function getCapabilityInfo() {
     msgType.selectedIndex = 1;
     changeByMesageType();
     clearInfo();
-    if (DWObject.DataSourceStatus != 1) {
-        DWObject.SelectSourceByIndex(document.getElementById('source').value);
-        DWObject.SetOpenSourceTimeout(2000);
-        DWObject.OpenSource();
-    }
-    DWObject.Capability = parseInt(supportedCapabilities.value);
-    DWObject.CapGet();
-    txtReturnedOrToSet.value = DWObject.ErrorString;
-    DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;
-    ctnType.selectedIndex = 5;
-    if (DynamsoftCapabilityNegotiation.tmpType > 2 && DynamsoftCapabilityNegotiation.tmpType < 7)
-        ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
-    document.getElementById('availableValuesSPAN').style.display = 'none';
-    DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = false;
-    switch (DynamsoftCapabilityNegotiation.tmpType) {
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY/*3*/:
-            document.getElementById('availableValuesSPAN').style.display = '';
-            document.getElementById('availableValues').options.length = 1;
-            for (i = 0; i < DWObject.CapNumItems; i++) {
-                if (DWObject.CapValueType > 8) /* >8 is string*/
-                /*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)));
-                else
-                /*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
-            }
-            document.getElementById('availableValues').options.selectedIndex = 0;
-            break;
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION/*4*/:
-            document.getElementById('availableValuesSPAN').style.display = '';
-            document.getElementById('availableValues').options.length = 1;
-            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
-                UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
-                for (i = 0; i < DWObject.CapNumItems; i++) {
-                    DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
-                    document.getElementById('availableValues').options.add(new Option(DynamsoftCapabilityNegotiation.tempFrame, DynamsoftCapabilityNegotiation.tempFrame));
-                }
-                document.getElementById('availableValues').options.selectedIndex = 0;
-            }
-            else {
-                for (i = 0; i < DWObject.CapNumItems; i++) {
-                    if (DWObject.CapValueType > 8)
-                    /*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)));
-                    else
-                    /*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
-                }
-                _showMeaningfulInfo(supportedCapabilities.value);
-                if (DWObject.CapValueType > 8) {
-                    UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')', true);
-                    UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')', true);
-                }
-                else {
-                    UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')', true);
-                    UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')', true);
-                }
-            }
-            break;
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE/*5*/:
-            var tempValue = '';
-            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
-                UpdateInfo('Special Capability ' + '- ICAP_FRAMES', true);
-                DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " " + DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
-                UpdateInfo('There is only one available Frame: ', false);
-                UpdateInfo(DynamsoftCapabilityNegotiation.tempFrame, true);
-            }
-            else {
-                if (DWObject.CapValueType > 8)
-                /*STR*/tempValue = DWObject.CapValueString;
-                else
-                /*NUM*/tempValue = DWObject.CapValue;
-                /*
-				* Special for BOOL
-				*/
-                if (DWObject.CapValueType == Dynamsoft.DWT.EnumDWT_CapValueType.TWTY_BOOL) {
-                    DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = true;
-                    if (tempValue == 0) tempValue = 'FALSE'; else tempValue = 'TRUE';
-                }
-                /*
-				* Special for DUPLEX
-				*/
-                if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
-                UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
-                UpdateInfo('Value = ' + tempValue, true);
-            }
-            break;
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE/*6*/:
-            UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
-            UpdateInfo('Min = ' + DWObject.CapMinValue, true);
-            UpdateInfo('Max = ' + DWObject.CapMaxValue, true);
-            UpdateInfo('StepSize = ' + DWObject.CapStepSize, true);
-            UpdateInfo('Default = ' + DWObject.CapDefaultValue, true);
-            UpdateInfo('Current = ' + DWObject.CapCurrentValue, true);
-            break;
-        default: console.log('This Capability is not supported');
-    }
-    var supportLevel = [];
-    if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_GET)) supportLevel.push('GET');/*TWQC_GET*/
-    if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_SET)) supportLevel.push('SET');/*TWQC_SET*/
-    if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_RESET)) supportLevel.push('RESET');/*TWQC_RESET*/
-    if (supportLevel.length > 0) {
-        UpdateInfo('Supported operations: ', false);
-        UpdateInfo(supportLevel.join(' / '), true);
-    }
+	var ddlSource = document.getElementById('source');
+	if (ddlSource) {
+		DWObject.SelectDeviceAsync(deviceList[ddlSource.selectedIndex -1]).then(function () {
+			return DWObject.SetOpenSourceTimeout(2000);
+		}).then(function(){
+			return DWObject.OpenSourceAsync();
+		}).then(function(){
+			DWObject.Capability = parseInt(supportedCapabilities.value);
+			DWObject.CapGet();
+			txtReturnedOrToSet.value = DWObject.ErrorString;
+			DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;
+			ctnType.selectedIndex = 5;
+			if (DynamsoftCapabilityNegotiation.tmpType > 2 && DynamsoftCapabilityNegotiation.tmpType < 7)
+				ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
+			document.getElementById('availableValuesSPAN').style.display = 'none';
+			DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = false;
+			switch (DynamsoftCapabilityNegotiation.tmpType) {
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY/*3*/:
+					document.getElementById('availableValuesSPAN').style.display = '';
+					document.getElementById('availableValues').options.length = 1;
+					for (i = 0; i < DWObject.CapNumItems; i++) {
+						if (DWObject.CapValueType > 8) /* >8 is string*/
+						/*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)));
+						else
+						/*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
+					}
+					document.getElementById('availableValues').options.selectedIndex = 0;
+					break;
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION/*4*/:
+					document.getElementById('availableValuesSPAN').style.display = '';
+					document.getElementById('availableValues').options.length = 1;
+					if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
+						UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
+						for (i = 0; i < DWObject.CapNumItems; i++) {
+							DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
+							document.getElementById('availableValues').options.add(new Option(DynamsoftCapabilityNegotiation.tempFrame, DynamsoftCapabilityNegotiation.tempFrame));
+						}
+						document.getElementById('availableValues').options.selectedIndex = 0;
+					}
+					else {
+						for (i = 0; i < DWObject.CapNumItems; i++) {
+							if (DWObject.CapValueType > 8)
+							/*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)));
+							else
+							/*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
+						}
+						_showMeaningfulInfo(supportedCapabilities.value);
+						if (DWObject.CapValueType > 8) {
+							UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')', true);
+							UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')', true);
+						}
+						else {
+							UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')', true);
+							UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')', true);
+						}
+					}
+					break;
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE/*5*/:
+					var tempValue = '';
+					if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
+						UpdateInfo('Special Capability ' + '- ICAP_FRAMES', true);
+						DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " " + DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
+						UpdateInfo('There is only one available Frame: ', false);
+						UpdateInfo(DynamsoftCapabilityNegotiation.tempFrame, true);
+					}
+					else {
+						if (DWObject.CapValueType > 8)
+						/*STR*/tempValue = DWObject.CapValueString;
+						else
+						/*NUM*/tempValue = DWObject.CapValue;
+						/*
+						* Special for BOOL
+						*/
+						if (DWObject.CapValueType == Dynamsoft.DWT.EnumDWT_CapValueType.TWTY_BOOL) {
+							DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = true;
+							if (tempValue == 0) tempValue = 'FALSE'; else tempValue = 'TRUE';
+						}
+						/*
+						* Special for DUPLEX
+						*/
+						if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
+						UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
+						UpdateInfo('Value = ' + tempValue, true);
+					}
+					break;
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE/*6*/:
+					UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
+					UpdateInfo('Min = ' + DWObject.CapMinValue, true);
+					UpdateInfo('Max = ' + DWObject.CapMaxValue, true);
+					UpdateInfo('StepSize = ' + DWObject.CapStepSize, true);
+					UpdateInfo('Default = ' + DWObject.CapDefaultValue, true);
+					UpdateInfo('Current = ' + DWObject.CapCurrentValue, true);
+					break;
+				default: console.log('This Capability is not supported');
+			}
+			var supportLevel = [];
+			if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_GET)) supportLevel.push('GET');/*TWQC_GET*/
+			if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_SET)) supportLevel.push('SET');/*TWQC_SET*/
+			if (DWObject.CapIfSupported(Dynamsoft.DWT.EnumDWT_MessageType.TWQC_RESET)) supportLevel.push('RESET');/*TWQC_RESET*/
+			if (supportLevel.length > 0) {
+				UpdateInfo('Supported operations: ', false);
+				UpdateInfo(supportLevel.join(' / '), true);
+			}
+	
+		}).catch(function (exp) {
+			alert(exp.message);
+		});
+	}
 }
 
 function setCapability() {
     var tempValue = '', i, valueToShow;
     clearInfo();
-    if (DWObject.DataSourceStatus != 1) {
-        DWObject.SelectSourceByIndex(document.getElementById('source').value);
-        DWObject.SetOpenSourceTimeout(2000);
-        DWObject.OpenSource();
-    }
-    DWObject.Capability = parseInt(supportedCapabilities.value);
-    DWObject.CapGet();
-    DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;
-    ctnType.selectedIndex = 5;
-    if (DynamsoftCapabilityNegotiation.tmpType > 2 && DynamsoftCapabilityNegotiation.tmpType < 7)
-        ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
-    switch (DynamsoftCapabilityNegotiation.tmpType) {
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY/*3*/:
-            alert('Setting an Array is not implemented');
-            break;
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION/*4*/:
-            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
-                if (document.getElementById('availableValues').length == 1) { /*Nothing in the List*/
-                    tempValue = txtReturnedOrToSet.value.split(' ');
-                }
-                else {
-                    tempValue = document.getElementById('availableValues').value.split(' ');
-                }
-                if (txtReturnedOrToSet.value != DynamsoftCapabilityNegotiation.tempFrame) {
-                    tempValue = txtReturnedOrToSet.value.split(' ');
-                }
-                DWObject.CapSetFrame(document.getElementById('availableValues').selectedIndex, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
-                DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
-                DWObject.CapSet();
-                UpdateInfo(DWObject.ErrorString, true);
-                for (i = 0; i < DWObject.CapNumItems; i++) {
-                    DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
-                    UpdateInfo("Current Frame is: " + DynamsoftCapabilityNegotiation.tempFrame);
-                }
-            }
-            else {
-                DWObject.CapValue = document.getElementById('availableValues')[document.getElementById('availableValues').selectedIndex].value;
-                DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
-                DWObject.CapSet();
-                UpdateInfo(DWObject.ErrorString, true);
-                DWObject.CapGet();
-                UpdateInfo('After Setting:');
-                if (DWObject.CapValueType > 8) {
-                    UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')', true);
-                    UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')', true);
-                }
-                else {
-                    UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')', true);
-                    UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')', true);
-                }
-            }
-            break;
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE/*5*/:
-            if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
-                tempValue = txtReturnedOrToSet.value.split(' ');
-                DWObject.CapSetFrame(0, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
-                DWObject.CapSet();
-                UpdateInfo(DWObject.ErrorString, true);
-                for (i = 0; i < DWObject.CapNumItems; i++) {
-                    DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
-                    UpdateInfo("Current Frame is: " + DynamsoftCapabilityNegotiation.tempFrame);
-                }
-            }
-            else {
-                if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
-                    DWObject.CapValue = TrueOrFalse.value;
-                }
-                else {
-                    if (DWObject.CapValueType > 8)
-                    /*STR*/DWObject.CapValue = txtReturnedOrToSet.value;
-                    else
-                    /*NUM*/DWObject.CapValue = parseFloat(txtReturnedOrToSet.value);
-                }
-                DWObject.CapSet();
-                UpdateInfo(DWObject.ErrorString, true);
-                DWObject.CapGet();
-                valueToShow = DWObject.CapValue;
-                if (DWObject.CapValueType == Dynamsoft.DWT.EnumDWT_CapValueType.TWTY_BOOL) {
-                    if (valueToShow == 0) valueToShow = 'FALSE'; else valueToShow = 'TRUE';
-                }
-                UpdateInfo('Value after setting: ' + valueToShow, true);
-            }
-            break;
-        case Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE/*6*/:
-            DWObject.CapCurrentValue = parseFloat(txtReturnedOrToSet.value);
-            DWObject.CapSet();
-            UpdateInfo(DWObject.ErrorString, true);
-            DWObject.CapGet();
-            valueToShow = DWObject.CapCurrentValue;
-            UpdateInfo('Value after setting: ' + valueToShow, true);
-            break;
-        default: console.log('This Capability is not supported');
-    }
+	
+	var ddlSource = document.getElementById('source');
+	if (ddlSource) {
+		DWObject.SelectDeviceAsync(deviceList[ddlSource.selectedIndex - 1]).then(function () {
+			return DWObject.SetOpenSourceTimeout(2000);
+		}).then(function(){
+			return DWObject.OpenSourceAsync();
+		}).then(function(){
+			
+			DWObject.Capability = parseInt(supportedCapabilities.value);
+			DWObject.CapGet();
+			DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;
+			ctnType.selectedIndex = 5;
+			if (DynamsoftCapabilityNegotiation.tmpType > 2 && DynamsoftCapabilityNegotiation.tmpType < 7)
+				ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
+			switch (DynamsoftCapabilityNegotiation.tmpType) {
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_ARRAY/*3*/:
+					alert('Setting an Array is not implemented');
+					break;
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_ENUMERATION/*4*/:
+					if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
+						if (document.getElementById('availableValues').length == 1) { /*Nothing in the List*/
+							tempValue = txtReturnedOrToSet.value.split(' ');
+						}
+						else {
+							tempValue = document.getElementById('availableValues').value.split(' ');
+						}
+						if (txtReturnedOrToSet.value != DynamsoftCapabilityNegotiation.tempFrame) {
+							tempValue = txtReturnedOrToSet.value.split(' ');
+						}
+						DWObject.CapSetFrame(document.getElementById('availableValues').selectedIndex, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
+						DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
+						DWObject.CapSet();
+						UpdateInfo(DWObject.ErrorString, true);
+						for (i = 0; i < DWObject.CapNumItems; i++) {
+							DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
+							UpdateInfo("Current Frame is: " + DynamsoftCapabilityNegotiation.tempFrame);
+						}
+					}
+					else {
+						DWObject.CapValue = document.getElementById('availableValues')[document.getElementById('availableValues').selectedIndex].value;
+						DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
+						DWObject.CapSet();
+						UpdateInfo(DWObject.ErrorString, true);
+						DWObject.CapGet();
+						UpdateInfo('After Setting:');
+						if (DWObject.CapValueType > 8) {
+							UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')', true);
+							UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')', true);
+						}
+						else {
+							UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')', true);
+							UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')', true);
+						}
+					}
+					break;
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_ONEVALUE/*5*/:
+					if (parseInt(supportedCapabilities.value) == Dynamsoft.DWT.EnumDWT_Cap.ICAP_FRAMES) {
+						tempValue = txtReturnedOrToSet.value.split(' ');
+						DWObject.CapSetFrame(0, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
+						DWObject.CapSet();
+						UpdateInfo(DWObject.ErrorString, true);
+						for (i = 0; i < DWObject.CapNumItems; i++) {
+							DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " + DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
+							UpdateInfo("Current Frame is: " + DynamsoftCapabilityNegotiation.tempFrame);
+						}
+					}
+					else {
+						if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
+							DWObject.CapValue = TrueOrFalse.value;
+						}
+						else {
+							if (DWObject.CapValueType > 8)
+							/*STR*/DWObject.CapValue = txtReturnedOrToSet.value;
+							else
+							/*NUM*/DWObject.CapValue = parseFloat(txtReturnedOrToSet.value);
+						}
+						DWObject.CapSet();
+						UpdateInfo(DWObject.ErrorString, true);
+						DWObject.CapGet();
+						valueToShow = DWObject.CapValue;
+						if (DWObject.CapValueType == Dynamsoft.DWT.EnumDWT_CapValueType.TWTY_BOOL) {
+							if (valueToShow == 0) valueToShow = 'FALSE'; else valueToShow = 'TRUE';
+						}
+						UpdateInfo('Value after setting: ' + valueToShow, true);
+					}
+					break;
+				case Dynamsoft.DWT.EnumDWT_CapType.TWON_RANGE/*6*/:
+					DWObject.CapCurrentValue = parseFloat(txtReturnedOrToSet.value);
+					DWObject.CapSet();
+					UpdateInfo(DWObject.ErrorString, true);
+					DWObject.CapGet();
+					valueToShow = DWObject.CapCurrentValue;
+					UpdateInfo('Value after setting: ' + valueToShow, true);
+					break;
+				default: console.log('This Capability is not supported');
+			}
+		}).catch(function (exp) {
+			alert(exp.message);
+		});
+	}
 }
 
 function clearInfo() {
@@ -581,16 +615,21 @@ function changeByMesageType() {
             break;
         case Dynamsoft.DWT.EnumDWT_MessageType.TWQC_RESET:
             clearInfo();
-            if (DWObject.DataSourceStatus != 1) {
-                DWObject.SetOpenSourceTimeout(2000);
-                DWObject.OpenSource();
-            }
-            DWObject.Capability = parseInt(supportedCapabilities.value);
-            DWObject.CapReset();
-            UpdateInfo('Resetting ' + supportedCapabilities.options[supportedCapabilities.options.selectedIndex].innerText + ' in 1 second...', true);
-            setTimeout(function () {
-                getCapabilityInfo();
-            }, 1000);
+			
+			DWObject.SetOpenSourceTimeout(2000).then(function(){
+					return DWObject.OpenSourceAsync();
+				}).then(function(){
+			
+				DWObject.Capability = parseInt(supportedCapabilities.value);
+				DWObject.CapReset();
+				UpdateInfo('Resetting ' + supportedCapabilities.options[supportedCapabilities.options.selectedIndex].innerText + ' in 1 second...', true);
+				setTimeout(function () {
+					getCapabilityInfo();
+				}, 1000);
+			
+			}).catch(function (exp) {
+				alert(exp.message);
+			});
             break;
     }
 }
