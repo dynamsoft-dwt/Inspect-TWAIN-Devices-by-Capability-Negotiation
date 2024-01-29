@@ -19,6 +19,15 @@ window.onload = function () {
         if (document.getElementsByClassName("dynamsoft-dialog-close"))
             document.getElementsByClassName("dynamsoft-dialog-close")[0].style.display = "none";
     } else {
+        Dynamsoft.OnLicenseError = function (message, errorCode) {
+            if(errorCode == -2808)
+                message = '<div style="padding:0">Sorry. Your product key has expired. You can purchase a full license at the <a target="_blank" href="https://www.dynamsoft.com/store/dynamic-web-twain/#DynamicWebTWAIN">online store</a>.</div><div style="padding:0">Or, you can try requesting a new product key at <a target="_blank" href="https://www.dynamsoft.com/customer/license/trialLicense?product=dwt&utm_source=in-product">this page</a>.</div><div style="padding:0">If you need any help, please <a target="_blank" href="https://www.dynamsoft.com/company/contact/">contact us</a>.</div>';
+                Dynamsoft.DWT.ShowMessage(message, {
+                width: 680,
+                headerStyle: 2
+            });
+        };
+        
 		Dynamsoft.DWT.UseLocalService = true;
         Dynamsoft.DWT.AutoLoad = false;
         Dynamsoft.DWT.Containers = [{ ContainerId: 'dwtcontrolContainer', Width: '100%', Height: '600px' }];
@@ -31,7 +40,7 @@ window.onload = function () {
          */
         //Dynamsoft.DWT.ProductKey = "A-Valid-Product-Key";
         //Dynamsoft.DWT.ResourcesPath = "https://tst.dynamsoft.com/libs/dwt/17.0";
-        Dynamsoft.DWT.ProductKey = 't00901wAAAGi71cktM2NG4toMEJ/g3egqded0C1EBhYMai/rMb+9PivaU9+1xp3qau4200cRaQBLw3fqD/MrH0+LKNIdtwU4rfxe0NzcomBYGKCsgTgto+AWw+SxV';
+        Dynamsoft.DWT.ProductKey = 'DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9';
         Dynamsoft.DWT.ResourcesPath = 'https://unpkg.com/dwt/dist/';
 
         Dynamsoft.DWT.Load();
