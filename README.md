@@ -8,8 +8,8 @@ This sample demonstrators the following usage
 
 Compatibility: Chrome 27+ & Firefox 27+ (Windows & Mac), Edge & IE 11 (Win)
 Author: Dynamsoft Team
-Version: 18.0.0
-Date: 2022/12/22
+Version: 19.0.0
+Date: 2025/04/01
 Support: support@dynamsoft.com
 
 
